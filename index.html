@@ -147,6 +147,30 @@
     *{transition:none!important}
     .lg img,.lg .flash,.ld .bar i{animation-duration:.01s!important;animation-delay:0s!important}
   }
+
+  /* 커스텀 드롭다운 (브라우저 기본 목록 대신) */
+  .cb{position:relative}
+  .cb input{padding-right:38px}
+  .cb-arrow{position:absolute;right:0;top:0;bottom:0;width:36px;border:0;background:transparent;cursor:pointer;display:grid;place-items:center;padding:0}
+  .cb-arrow::before{content:"";width:7px;height:7px;border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);transform:translateY(-2px) rotate(45deg);transition:transform .15s}
+  .cb.open .cb-arrow::before{transform:translateY(2px) rotate(-135deg);border-color:var(--blue)}
+  .cb-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;margin:0;padding:6px;list-style:none;
+    background:#fff;border:1px solid var(--line);box-shadow:0 12px 32px rgba(11,13,18,.12),0 2px 6px rgba(11,13,18,.06);
+    max-height:264px;overflow:auto;display:none;opacity:0;transform:translateY(-4px);transition:opacity .14s,transform .14s}
+  .cb.open .cb-menu{display:block}
+  .cb.show .cb-menu{opacity:1;transform:none}
+  .cb.up .cb-menu{top:auto;bottom:calc(100% + 6px);transform:translateY(4px)}
+  .cb.up.show .cb-menu{transform:none}
+  .cb-menu li{display:flex;align-items:center;gap:10px;padding:10px 12px;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;
+    border-left:2px solid transparent;user-select:none}
+  .cb-menu li .g{margin-left:auto;font:800 9.5px var(--en);letter-spacing:.16em;color:var(--faint)}
+  .cb-menu li mark{background:none;color:var(--blue)}
+  .cb-menu li.act{background:var(--soft);border-left-color:var(--blue)}
+  .cb-menu li.sel{color:var(--blue)}
+  .cb-menu li.sel::after{content:"";width:9px;height:5px;margin-left:8px;border-left:2px solid var(--blue);border-bottom:2px solid var(--blue);transform:translateY(-2px) rotate(-45deg)}
+  .cb-menu .sep{height:1px;background:var(--line);margin:5px 6px;padding:0;border:0;pointer-events:none}
+  .cb-menu::-webkit-scrollbar{width:8px}.cb-menu::-webkit-scrollbar-thumb{background:var(--line);border:2px solid #fff}
+  @media (prefers-reduced-motion:reduce){.cb-menu{transition:none}}
 </style>
 </head>
 <body>
@@ -705,7 +729,7 @@ function buildSide(k,n){
 buildSide("A","1"); buildSide("B","2");
 document.body.insertAdjacentHTML("beforeend",
   `<datalist id="clsList">${Object.keys(CLASSES).map(o=>`<option value="${o}">`).join("")}</datalist>
-   <datalist id="subList">${ALL_SUBS.map(o=>`<option value="${o}">`).join("")}</datalist>`);
+   <datalist id="subList">${Object.entries(CLASSES).flatMap(([r,v])=>v.subs.map(o=>`<option value="${o}" data-g="${r}">`)).join("")}</datalist>`);
 
 ["chat","oath","server","date"].forEach(id=>{ $("#"+id).dataset.f=id; });
 function bindFields(){
@@ -965,6 +989,63 @@ if(document.fonts&&document.fonts.load){
     document.fonts.load(`900 46px "Archivo"`,"0123456789"),
   ]).then(()=>document.fonts.ready).then(render).catch(()=>{});
 }
+})();
+</script>
+<script>
+/* input[list] 를 디자인에 맞춘 드롭다운으로 바꿈 (직접 입력도 그대로 가능) */
+(() => {
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+  function enhance(inp){
+    const dl=document.getElementById(inp.getAttribute("list")); if(!dl) return;
+    const opts=[...dl.querySelectorAll("option")].map(o=>({v:o.value,g:o.dataset.g||""}));
+    inp.removeAttribute("list"); inp.setAttribute("autocomplete","off");
+    inp.setAttribute("role","combobox"); inp.setAttribute("aria-expanded","false");
+    const wrap=document.createElement("div"); wrap.className="cb";
+    inp.parentNode.insertBefore(wrap,inp); wrap.appendChild(inp);
+    const arrow=document.createElement("button"); arrow.type="button"; arrow.className="cb-arrow"; arrow.tabIndex=-1; arrow.setAttribute("aria-label","목록 열기");
+    const menu=document.createElement("ul"); menu.className="cb-menu"; menu.setAttribute("role","listbox");
+    wrap.append(arrow,menu);
+    let items=[], act=-1, typed=false;
+
+    function build(){
+      const q=typed?inp.value.trim():"";
+      items=q?opts.filter(o=>o.v.includes(q)):opts.slice();
+      if(!items.length){ close(); return false; }
+      const cur=inp.value.trim();
+      menu.innerHTML=items.map((o,i)=>{
+        const label=q?esc(o.v).replace(esc(q),`<mark>${esc(q)}</mark>`):esc(o.v);
+        return `<li role="option" data-i="${i}" class="${o.v===cur?"sel":""}">${label}${o.g?`<span class="g">${esc(o.g)}</span>`:""}</li>`;
+      }).join("");
+      act=items.findIndex(o=>o.v===cur); paint(); return true;
+    }
+    function paint(){ [...menu.children].forEach((li,i)=>li.classList.toggle("act",i===act));
+      const el=menu.children[act]; if(el) el.scrollIntoView({block:"nearest"}); }
+    function place(){ const r=inp.getBoundingClientRect(), need=Math.min(264,items.length*40+14)+10;
+      const below=window.innerHeight-r.bottom, above=r.top;
+      wrap.classList.toggle("up", below<need && above>below); }
+    function open(){ if(!build()) return; place(); wrap.classList.add("open"); inp.setAttribute("aria-expanded","true");
+      requestAnimationFrame(()=>wrap.classList.add("show")); }
+    function close(){ wrap.classList.remove("open","show"); inp.setAttribute("aria-expanded","false"); act=-1; }
+    function pick(i){ const o=items[i]; if(!o) return; inp.value=o.v; typed=false;
+      inp.dispatchEvent(new Event("input",{bubbles:true})); close(); }
+
+    inp.addEventListener("focus",()=>{ typed=false; open(); });
+    inp.addEventListener("click",()=>{ if(!wrap.classList.contains("open")){ typed=false; open(); } });
+    inp.addEventListener("input",e=>{ if(!e.isTrusted) return; typed=true; open(); });
+    inp.addEventListener("keydown",e=>{
+      const isOpen=wrap.classList.contains("open");
+      if(e.key==="ArrowDown"){ e.preventDefault(); if(!isOpen){ typed=false; open(); return; } act=Math.min(items.length-1,act+1); paint(); }
+      else if(e.key==="ArrowUp"){ e.preventDefault(); if(isOpen){ act=Math.max(0,act-1); paint(); } }
+      else if(e.key==="Enter"){ if(isOpen&&act>=0){ e.preventDefault(); pick(act); } }
+      else if(e.key==="Escape"||e.key==="Tab"){ close(); }
+    });
+    inp.addEventListener("blur",()=>setTimeout(close,120));
+    arrow.addEventListener("mousedown",e=>{ e.preventDefault();
+      if(wrap.classList.contains("open")) close(); else { typed=false; inp.focus(); open(); } });
+    menu.addEventListener("mousedown",e=>{ e.preventDefault(); const li=e.target.closest("li[data-i]"); if(li) pick(+li.dataset.i); });
+    menu.addEventListener("mousemove",e=>{ const li=e.target.closest("li[data-i]"); if(li && +li.dataset.i!==act){ act=+li.dataset.i; paint(); } });
+  }
+  document.querySelectorAll("input[list]").forEach(enhance);
 })();
 </script>
 </body>
