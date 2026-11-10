@@ -285,13 +285,15 @@ const splash=document.getElementById("splash");
 })();
 
 /* ===================== 세계관 ===================== */
+/* 4종족 × 6클래스 · 최대 Lv.350 */
 const CLASSES={
-  "전사":{c:"#F5B942",subs:["발키리","성기사","어비스나이트"]},
-  "마법사":{c:"#5AB8FF",subs:["흑마도사","배틀메이지","아르카나","환령사","바드"]},
-  "암살자":{c:"#3FE0A8",subs:["닌자","검귀","독야객"]},
-  "헌터":{c:"#B36BFF",subs:["건슬링어","마검총사","호크아이","소울이터"]},
-  "전귀":{c:"#FF6A5E",subs:["철권귀","기공사","월창객"]}
+  "인간":{en:"HUMAN",subs:["발키리","셰우트","호렌","메자르","세르카","헤카르"]},
+  "엘프":{en:"ELF",subs:["팔라딘","퀘이사","펄서","엔트로피","오비탈","파라락스"]},
+  "도깨비":{en:"DOKKAEBI",subs:["귀장","기맥사","검귀","권귀","월창","비나리"]},
+  "악마":{en:"DEMON",subs:["어비스나이트","베나토르","아르마투스","에피지어","소울이터","바드"]}
 };
+const raceOf=sub=>{ const t=String(sub||"").trim();
+  return Object.keys(CLASSES).find(r=>CLASSES[r].subs.includes(t))||""; };
 const RANKS=[
   {n:"동행",  en:"COMPANION"},
   {n:"결속",  en:"BONDED"},
@@ -303,30 +305,32 @@ const RANK=n=>RANKS.find(r=>r.n===n);
 const RECS=[["함께한 일수",""],["클리어 레이드",""],["함께 사냥",""],["파티 승률",""]];
 
 /* ===================== OOC ===================== */
-const OOC=`*[OOC: 진행 중인 롤플레이를 잠시 멈춘다. 아래는 국산 판타지 MMORPG 「블루페어리」 게임 내 [인연 정보] 창에 등록될 두 캐릭터의 데이터다. 지금까지의 서사와 두 사람의 관계를 근거로, 실제 게임 시스템 창에 표시되는 것처럼 아래 양식 그대로 출력한다. 다른 말은 덧붙이지 않는다.
+const OOC=`*[OOC: 진행 중인 롤플레이를 잠시 멈춘다. 아래는 판타지 MMORPG 「블루페어리」 게임 내 [인연 정보] 창에 등록될 두 캐릭터의 데이터다. 지금까지의 서사와 두 사람의 관계를 근거로, 실제 게임 시스템 창에 표시되는 것처럼 아래 양식 그대로 출력한다. 다른 말은 덧붙이지 않는다.
 
-· 클래스는 전사 / 마법사 / 암살자 / 헌터 / 전귀 중 하나.
-· 전직은 해당 클래스의 하위 전직으로 적는다.
-  전사: 발키리, 성기사, 어비스나이트
-  마법사: 흑마도사, 배틀메이지, 아르카나, 환령사, 바드
-  암살자: 닌자, 검귀, 독야객
-  헌터: 건슬링어, 마검총사, 호크아이, 소울이터
-  전귀: 철권귀, 기공사, 월창객
+· 종족은 인간 / 엘프 / 도깨비 / 악마 중 하나.
+· 클래스는 해당 종족의 클래스 중 하나로 적는다.
+  인간: 발키리, 셰우트, 호렌, 메자르, 세르카, 헤카르
+  엘프: 팔라딘, 퀘이사, 펄서, 엔트로피, 오비탈, 파라락스
+  도깨비: 귀장, 기맥사, 검귀, 권귀, 월창, 비나리
+  악마: 어비스나이트, 베나토르, 아르마투스, 에피지어, 소울이터, 바드
+· 레벨은 1~350 사이 숫자만 적는다. (만렙 350)
+· 길드는 휴지심 / 흑요석 / 공백 중 하나이거나 서사에 맞는 길드명. 소속이 없으면 무소속.
 · 칭호는 게임에서 실제로 얻을 법한 8자 이내의 문구로 짓는다.
+· 클리어 레이드는 8인 파티 레이드 기준 횟수다.
 
 [캐릭터1]
 닉네임:
-레벨: (1~200)
+레벨:
+종족:
 클래스:
-전직:
 길드:
 칭호:
 
 [캐릭터2]
 닉네임:
 레벨:
+종족:
 클래스:
-전직:
 길드:
 칭호:
 
@@ -527,9 +531,9 @@ function drawChar(c,k){
   const by=p.y+p.h;
   const nm=d.name||"닉네임";
   T(c,nm,p.x,by+40,{font:fitF(c,nm,p.w,24,15,`800 %S%px ${F}`,-.6),fill:d.name?INK:SOFT,spacing:-.6});
-  const cl=[d.cls,d.sub].filter(Boolean).join(" · ")||"클래스 미정";
-  c.fillStyle=d.cls?(k==="A"?BLUE:INK):LN; c.fillRect(p.x,by+55,7,7);
-  T(c,cl,p.x+15,by+63,{font:fitF(c,cl,p.w-15,13.5,10,`700 %S%px ${F}`),fill:d.cls?"#2A2F3A":SOFT});
+  const cl=[d.cls,d.sub].filter(Boolean).join(" · ")||"종족 · 클래스 미정";
+  c.fillStyle=(d.cls||d.sub)?(k==="A"?BLUE:INK):LN; c.fillRect(p.x,by+55,7,7);
+  T(c,cl,p.x+15,by+63,{font:fitF(c,cl,p.w-15,13.5,10,`700 %S%px ${F}`),fill:(d.cls||d.sub)?"#2A2F3A":SOFT});
   T(c,d.guild?`${d.guild} 길드`:"무소속",p.x,by+85,{font:`500 12.5px ${F}`,fill:d.guild?GRAY:SOFT});
   if(d.title){
     const tf=fitF(c,d.title,p.w-20,12,9,`700 %S%px ${F}`), tw=mw(c,d.title,tf)+20;
@@ -679,16 +683,17 @@ function buildSide(k,n){
       <h3>캐릭터 ${n} <em>PROFILE</em></h3>
       <div class="row">
         <label class="f"><span>NAME</span><input type="text" data-f="${k}.name" maxlength="14" placeholder="닉네임"></label>
-        <label class="f"><span>LEVEL</span><input type="text" data-f="${k}.level" maxlength="4" placeholder="레벨"></label>
+        <label class="f"><span>LEVEL</span><input type="text" data-f="${k}.level" maxlength="7" inputmode="numeric" placeholder="1~350"></label>
       </div>
       <div class="row">
-        <label class="f"><span>CLASS</span><input type="text" data-f="${k}.cls" list="clsList" placeholder="클래스"></label>
-        <label class="f"><span>JOB</span><input type="text" data-f="${k}.sub" list="subList" placeholder="전직"></label>
+        <label class="f"><span>RACE</span><input type="text" data-f="${k}.cls" list="clsList" placeholder="종족"></label>
+        <label class="f"><span>CLASS</span><input type="text" data-f="${k}.sub" list="subList" placeholder="클래스"></label>
       </div>
       <div class="row">
         <label class="f"><span>GUILD</span><input type="text" data-f="${k}.guild" maxlength="12" placeholder="길드"></label>
         <label class="f"><span>TITLE</span><input type="text" data-f="${k}.title" maxlength="12" placeholder="칭호"></label>
       </div>
+      <p class="hint" style="margin-top:0">클래스를 고르면 종족은 자동으로 채워집니다.</p>
     </div>`;
 }
 buildSide("A","1"); buildSide("B","2");
@@ -701,7 +706,10 @@ function bindFields(){
   document.querySelectorAll("[data-f]").forEach(el=>{
     const [a,b]=el.dataset.f.split(".");
     el.value = b ? S[a][b] : S[a];
-    el.oninput=()=>{ if(b) S[a][b]=el.value; else S[a]=el.value; render(); };
+    el.oninput=()=>{ if(b) S[a][b]=el.value; else S[a]=el.value;
+      if(b==="sub"){ const r=raceOf(el.value); if(r&&S[a].cls!==r){ S[a].cls=r;
+        const ce=document.querySelector(`[data-f="${a}.cls"]`); if(ce) ce.value=r; } }
+      render(); };
   });
 }
 bindFields();
@@ -757,7 +765,7 @@ document.querySelectorAll("[data-b]").forEach(el=>{
 /* ===================== 자동 인식 ===================== */
 const CKEYS=[
   [/^(닉네임|이름|캐릭터명|name|nick(name)?)$/i,"name"],[/^(레벨|lv|level|lev)$/i,"level"],
-  [/^(클래스|직업|class|계열)$/i,"cls"],[/^(전직|세부직업|세부클래스|spec)$/i,"sub"],
+  [/^(종족|race|계열)$/i,"cls"],[/^(클래스|직업|class|전직|세부직업|세부클래스|spec|job)$/i,"sub"],
   [/^(길드|소속|guild)$/i,"guild"],[/^(칭호|타이틀|title)$/i,"title"]
 ];
 const BKEYS=[
@@ -833,7 +841,9 @@ function parsePaste(raw){
 $("#doParse").onclick=()=>{
   const txt=$("#pasteBox").value.trim();
   if(!txt){ toast("붙여넣은 내용이 없어요"); return; }
-  const n=parsePaste(txt); syncAll(); render();
+  const n=parsePaste(txt);
+  ["A","B"].forEach(k=>{ const r=raceOf(S[k].sub); if(r&&!CLASSES[S[k].cls]) S[k].cls=r; });
+  syncAll(); render();
   toast(n?`${n}개 항목을 불러왔어요`:"인식된 항목이 없어요");
 };
 $("#clearPaste").onclick=()=>{ $("#pasteBox").value=""; };
